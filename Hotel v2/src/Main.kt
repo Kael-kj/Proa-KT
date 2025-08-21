@@ -1,20 +1,6 @@
-import java.security.interfaces.DSAParams
 import java.util.Scanner
-
-/*
-1-pagina de login
-2-home page
-3-cadastro de cliente
-diaria
-quarto
-desconto
-armazenamento de conta
-30% de entrada
-cofirmacao de cadastro
-retorno home page
- */
-
-
+import kotlin.math.abs
+import kotlin.system.exitProcess
 
 data class Hospedagem(
     val id: Int,
@@ -27,10 +13,9 @@ data class Hospedagem(
     val total: Double,
     val deposito: Double,
     val saldo: Double,
-    val quarto: Int
+    val quarto: Int,
+    val listaHospedes: MutableList<String>
 )
-
-
 
 object UserSession {
     var currentUser: String? = null
@@ -46,20 +31,19 @@ object UserSession {
     }
 }
 
-val quartos = Array(20) {false}
+val quartos = Array(20) { false }
 val hospedagens = mutableListOf<Hospedagem>()
+val listaHospedes = mutableListOf<String>()
 var contadorCadastro = 1
 
-fun login(scanner : Scanner){
+fun login(scanner: Scanner) {
     val senhaCorreta = "2678"
-
     println("=== HOTEL TERABITHIA ===")
 
     while (true) {
-
         print("Digite o nome de usuário: ")
         val user = scanner.nextLine()
-        if( user in UserSession.usuariosUsados){
+        if (user in UserSession.usuariosUsados) {
             println("Usuário ja foi utilizado. Tente outro nome de usuário para entrar!")
             continue
         }
@@ -67,11 +51,11 @@ fun login(scanner : Scanner){
         var tentativas = 0
         var autenticado = false
         while (tentativas < 3) {
-            print("Digite a senha:")
+            print("Digite a senha: ")
             val senha = scanner.nextLine()
             if (senha == senhaCorreta) {
                 UserSession.login(user)
-                println("Login realizado com sucesso! Bem-vindo ao Hotel Terabithia, ${UserSession.currentUser}. E um imenso prazer ter voce por aqui!")
+                println("Login realizado com sucesso! Bem-vindo ao Hotel Terabithia, ${UserSession.currentUser}.")
                 homepage(scanner)
                 autenticado = true
             } else {
@@ -79,40 +63,47 @@ fun login(scanner : Scanner){
                 println("Senha incorreta. Tentativas restantes: ${3 - tentativas}")
             }
         }
-        if (!autenticado){
+        if (!autenticado) {
             println("Tentativas excedidas. Troque o usuário para entrar!")
-            }
+        }
     }
 }
 
-
-
-fun homepage(scanner: Scanner){
+fun homepage(scanner: Scanner) {
     println("\n=== Home Page ===")
     println("Usuário logado: ${UserSession.currentUser}")
     println("1- Cadastro")
-    println("2 - Logout")
-    println("3 - Sair do programa")
+    println("2- Gerenciar hóspedes")
+    println("3- Logout")
+    println("4- Sair do programa")
     val escolha = scanner.nextLine()
 
-    when(escolha){
-        "1"->{
+    when (escolha) {
+        "1" -> {
             cadastro(scanner)
             homepage(scanner)
         }
-        "2"->{
-            print("Encerrando login...")
+        "2" -> {
+            cadastrarHospedes(scanner)
+            homepage(scanner)
+        }
+        "3" -> {
+            println("Encerrando login...")
             login(scanner)
         }
-        else -> println("Opção inválida!")
+        "4" -> {
+            println("Saindo do programa...")
+            exitProcess(0)
+        }
+        else -> {
+            println("Opção inválida!")
+            homepage(scanner)
+        }
     }
-
 }
 
-
-
 fun cadastro(scanner: Scanner) {
-    print("Nome do hóspede: ")
+    print("Nome do hóspede principal: ")
     val nome = scanner.nextLine()
 
     print("Quantidade de dias: ")
@@ -125,28 +116,22 @@ fun cadastro(scanner: Scanner) {
     while (true) {
         println("Escolha um quarto (1 a 20):")
         quartoEscolhido = scanner.nextLine().toInt()
-
         if (quartoEscolhido !in 1..20) {
             println("Quarto inválido! Digite entre 1 e 20.")
             continue
         }
-
         if (quartos[quartoEscolhido - 1]) {
             println("Quarto $quartoEscolhido já está ocupado!")
-
             val sugestoes = (1..20).filter { !quartos[it - 1] }
-                .sortedBy { kotlin.math.abs(it - quartoEscolhido) }
+                .sortedBy { abs(it - quartoEscolhido) }
                 .take(3)
-
             if (sugestoes.isEmpty()) {
                 println("Todos os quartos estão ocupados!")
                 return
             } else {
                 println("Sugestões de quartos próximos: ${sugestoes.joinToString(", ")}")
             }
-        } else {
-            break
-        }
+        } else break
     }
 
     val subtotal = valorDiaria * dias
@@ -155,14 +140,12 @@ fun cadastro(scanner: Scanner) {
         in 10..30 -> 15
         else -> 0
     }
-
-
-    val descontoValor: Double = subtotal * descontoPercent / 100
-    val totalSemTaxa: Double = subtotal - descontoValor
+    val descontoValor = subtotal * descontoPercent / 100
+    val totalSemTaxa = subtotal - descontoValor
     val taxaEstado = 7.50
-    val total: Double = (subtotal - descontoValor) + taxaEstado
-    val deposito: Double = total * 0.3
-    val saldo: Double = total - deposito
+    val total = totalSemTaxa + taxaEstado
+    val deposito = total * 0.3
+    val saldo = total - deposito
 
     println("\n--- RESUMO ---")
     println("Hóspede: $nome")
@@ -178,7 +161,6 @@ fun cadastro(scanner: Scanner) {
 
     print("Deseja confirmar o cadastro? (S/N): ")
     val confirmar = scanner.nextLine().uppercase()
-
     if (confirmar == "S") {
         quartos[quartoEscolhido - 1] = true
         val hospedagem = Hospedagem(
@@ -192,18 +174,45 @@ fun cadastro(scanner: Scanner) {
             total = total,
             deposito = deposito,
             saldo = saldo,
-            quarto = quartoEscolhido
+            quarto = quartoEscolhido,
+            listaHospedes = mutableListOf(nome)
         )
         hospedagens.add(hospedagem)
         println("Cadastro confirmado! Número de cadastro: ${hospedagem.id}\n")
-    } else {
-        println("Cadastro cancelado.\n")
-    }
+    } else println("Cadastro cancelado.\n")
 }
 
 
+fun cadastrarHospedes(scanner: Scanner) {
+    while (true) {
+        println("""
+            Cadastro de Hóspedes
+            1. Cadastrar
+            2. Pesquisar
+            3. Voltar
+        """.trimIndent())
 
-fun main(){
+        when (scanner.nextLine()) {
+            "1" -> {
+                print("Nome do hóspede: ")
+                val novo = scanner.nextLine()
+                listaHospedes.add(novo)
+                println("$novo cadastrado com sucesso!")
+            }
+            "2" -> {
+                print("Pesquisar hóspede: ")
+                val nome = scanner.nextLine()
+                val encontrados = listaHospedes.filter { it.contains(nome, ignoreCase = true) }
+                if (encontrados.isEmpty()) println("Nenhum hóspede encontrado.")
+                else println("Encontrado(s): ${encontrados.joinToString(", ")}")
+            }
+            "3" -> return
+            else -> println("Opção inválida!")
+        }
+    }
+}
+
+fun main() {
     val scanner = Scanner(System.`in`)
     login(scanner)
 }
