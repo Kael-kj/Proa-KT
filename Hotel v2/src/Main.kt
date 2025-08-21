@@ -104,7 +104,10 @@ fun homepage(scanner: Scanner) {
 
 fun cadastro(scanner: Scanner) {
     print("Nome do hóspede principal: ")
-    val nome = scanner.nextLine()
+    val nomePrincipal = scanner.nextLine()
+
+    print("Idade do hóspede principal: ")
+    val idadePrincipal = scanner.nextLine().toInt()
 
     print("Quantidade de dias: ")
     val dias = scanner.nextLine().toInt()
@@ -134,7 +137,36 @@ fun cadastro(scanner: Scanner) {
         } else break
     }
 
-    val subtotal = valorDiaria * dias
+
+    val listaHospedes = mutableListOf<Pair<String, Int>>()
+    listaHospedes.add(nomePrincipal to idadePrincipal)
+
+
+    print("Há familiares que irão se hospedar com você? (S/N): ")
+    val temFamiliares = scanner.nextLine().uppercase()
+    if (temFamiliares == "S") {
+        while (true) {
+            print("Digite o nome do familiar (ou ENTER para finalizar): ")
+            val nomeFamiliar = scanner.nextLine()
+            if (nomeFamiliar.isEmpty()) break
+            print("Digite a idade de $nomeFamiliar: ")
+            val idadeFamiliar = scanner.nextLine().toInt()
+            listaHospedes.add(nomeFamiliar to idadeFamiliar)
+        }
+    }
+
+    var subtotal = 0.0
+    println("\n--- RESUMO POR HÓSPEDE ---")
+    listaHospedes.forEach { (nome, idade) ->
+        val diariaFinal = when {
+            idade < 6 -> 0.0
+            idade >= 60 -> valorDiaria / 2
+            else -> valorDiaria
+        }
+        println("Hóspede: $nome, Idade: $idade, Valor diária: R$ $diariaFinal")
+        subtotal += diariaFinal * dias
+    }
+
     val descontoPercent = when (dias) {
         in 5..9 -> 8
         in 10..30 -> 15
@@ -147,9 +179,8 @@ fun cadastro(scanner: Scanner) {
     val deposito = total * 0.3
     val saldo = total - deposito
 
-    println("\n--- RESUMO ---")
-    println("Hóspede: $nome")
-    println("Dias: $dias")
+    println("\n--- RESUMO GERAL ---")
+    println("Total de hóspedes: ${listaHospedes.size}")
     println("Subtotal: R$ $subtotal")
     println("Desconto: R$ $descontoValor")
     println("Total sem taxa: R$ $totalSemTaxa")
@@ -165,7 +196,7 @@ fun cadastro(scanner: Scanner) {
         quartos[quartoEscolhido - 1] = true
         val hospedagem = Hospedagem(
             id = contadorCadastro++,
-            nome = nome,
+            nome = nomePrincipal,
             dias = dias,
             valorDiaria = valorDiaria,
             subtotal = subtotal,
@@ -175,12 +206,13 @@ fun cadastro(scanner: Scanner) {
             deposito = deposito,
             saldo = saldo,
             quarto = quartoEscolhido,
-            listaHospedes = mutableListOf(nome)
+            listaHospedes = listaHospedes.map { it.first }.toMutableList()
         )
         hospedagens.add(hospedagem)
         println("Cadastro confirmado! Número de cadastro: ${hospedagem.id}\n")
     } else println("Cadastro cancelado.\n")
 }
+
 
 
 fun cadastrarHospedes(scanner: Scanner) {
