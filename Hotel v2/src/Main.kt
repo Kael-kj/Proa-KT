@@ -380,7 +380,7 @@ fun cadastrarEvento(scanner:Scanner){
     println("Custo: R$ $custoGarcons")
     println("Agora vamos calcular o buffet do hotel para o evento.")
 
-    // ===== Parte 4: Buffet =====
+
     val litrosCafe = convidados * 0.2
     val litrosAgua = convidados * 0.5
     val qtdSalgados = convidados * 7
