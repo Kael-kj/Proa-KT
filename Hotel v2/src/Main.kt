@@ -1,5 +1,6 @@
 import java.util.Scanner
 import kotlin.math.abs
+import kotlin.math.round
 import kotlin.system.exitProcess
 
 data class Hospedagem(
@@ -16,6 +17,12 @@ data class Hospedagem(
     val quarto: Int,
     val listaHospedes: MutableList<String>
 )
+
+val quartos = Array(20) { false }
+val hospedagens = mutableListOf<Hospedagem>()
+val listaHospedes = mutableListOf<String>()
+var contadorCadastro = 1
+
 data class Evento(
     val id: Int,
     val empresa: String,
@@ -33,6 +40,35 @@ data class Evento(
 val eventos = mutableListOf<Evento>()
 var contadorEventos = 1
 
+data class Transporte(
+    val id: Int,
+    val destino: String,
+    val qtdPessoas: Int,
+    val veiculos: Map<String, Int>, // ônibus -> 1, van -> 2, carro -> 2
+    val custo: Int
+)
+
+val transportes = mutableListOf<Transporte>()
+var contadorTransporte = 1
+
+data class Combustivel(
+    val posto: String,
+    val tipo: String,
+    val preco: Double,
+    val custoTotal: Double
+)
+
+data class Empresa(
+    val nome: String,
+    val valorPorAparelho: Double,
+    val quantidadeAparelhos: Int,
+    val percentualDesconto: Double,
+    val quantidadeMinimaDesconto: Int,
+    val valorMinimoIsencao: Double,
+    val taxaDeslocamento: Double,
+    var valorFinal: Double = 0.0
+)
+
 object UserSession {
     var currentUser: String? = null
     val usuariosUsados = mutableSetOf<String>()
@@ -46,11 +82,6 @@ object UserSession {
         currentUser = null
     }
 }
-
-val quartos = Array(20) { false }
-val hospedagens = mutableListOf<Hospedagem>()
-val listaHospedes = mutableListOf<String>()
-var contadorCadastro = 1
 
 fun login(scanner: Scanner) {
     val senhaCorreta = "2678"
@@ -86,46 +117,42 @@ fun login(scanner: Scanner) {
 }
 
 fun homepage(scanner: Scanner) {
-    println("\n=== Home Page ===")
-    println("Usuário logado: ${UserSession.currentUser}")
-    println("1- Cadastro")
-    println("2- Gerenciar hóspedes")
-    println("3- Logout")
-    println("4- Sair do programa")
-    println("5- Pesquisar hospedagens")
-    val escolha = scanner.nextLine()
+    while (true) {
+        println("\n=== HOTEL TERABITHIA ===")
+        println("Usuário logado: ${UserSession.currentUser}")
+        println("1 - Cadastro de hóspedes")
+        println("2 - Pesquisar hospedagens")
+        println("3 - Cadastrar evento")
+        println("4 - Pesquisa de abastecimento")
+        println("5 - Cadastrar transporte")
+        println("6 - Manutenção de ar-condicionado")
+        println("7 - Logout")
+        println("8 - Sair do programa")
 
-    when (escolha) {
-        "1" -> {
-            cadastro(scanner)
-            homepage(scanner)
-        }
-        "2" -> {
-            cadastrarHospedes(scanner)
-            homepage(scanner)
-        }
-        "3" -> {
-            println("Encerrando login...")
-            login(scanner)
-        }
-        "4" -> {
-            println("Saindo do programa...")
-            exitProcess(0)
-        }
-        "5" -> {
-            pesquisarHospedagem(scanner)
-            homepage(scanner)
-        }
-        "6"->{
-            cadastrarEvento(scanner)
-            homepage(scanner)
-        }
-        else -> {
-            println("Opção inválida!")
-            homepage(scanner)
+        print("Escolha uma opção: ")
+        val escolha = scanner.nextLine()
+
+        when (escolha) {
+            "1" -> cadastro(scanner)
+            "2" -> pesquisarHospedagem(scanner)
+            "3" -> cadastrarEvento(scanner)
+            "4" -> pesquisaAbastecimento(scanner)
+            "5" -> cadastrarTransporte(scanner)
+            "6" -> manutencaoDeAr()
+            "7" -> {
+                println("Encerrando login...")
+                login(scanner)
+                return
+            }
+            "8" -> {
+                println("Saindo do programa...")
+                exitProcess(0)
+            }
+            else -> println(" Opção inválida! Tente novamente.")
         }
     }
 }
+
 
 fun cadastro(scanner: Scanner) {
     print("Nome do hóspede principal: ")
@@ -240,34 +267,6 @@ fun cadastro(scanner: Scanner) {
 
 
 
-fun cadastrarHospedes(scanner: Scanner) {
-    while (true) {
-        println("""
-            Cadastro de Hóspedes
-            1. Cadastrar
-            2. Pesquisar
-            3. Voltar
-        """.trimIndent())
-
-        when (scanner.nextLine()) {
-            "1" -> {
-                print("Nome do hóspede: ")
-                val novo = scanner.nextLine()
-                listaHospedes.add(novo)
-                println("$novo cadastrado com sucesso!")
-            }
-            "2" -> {
-                print("Pesquisar hóspede: ")
-                val nome = scanner.nextLine()
-                val encontrados = listaHospedes.filter { it.contains(nome, ignoreCase = true) }
-                if (encontrados.isEmpty()) println("Nenhum hóspede encontrado.")
-                else println("Encontrado(s): ${encontrados.joinToString(", ")}")
-            }
-            "3" -> return
-            else -> println("Opção inválida!")
-        }
-    }
-}
 
 fun pesquisarHospedagem(scanner: Scanner){
     println("\n=== PESQUISAR HOSPEDAGEM ===")
@@ -427,9 +426,184 @@ fun cadastrarEvento(scanner:Scanner){
     println("Evento cadastrado com sucesso!\n")
 }
 
+fun cadastrarTransporte(scanner: Scanner) {
+    println("=== Cadastro de Transporte ===")
+    print("Destino do passeio: ")
+    val destino = scanner.nextLine()
+
+    print("Quantidade de pessoas para o passeio: ")
+    val qtdPessoas = scanner.nextLine().toInt()
+
+    val capacidadeOnibus = 50
+    val capacidadeVan = 12
+    val capacidadeCarro = 4
+
+    var restante = qtdPessoas
+    var onibus = restante / capacidadeOnibus
+    restante %= capacidadeOnibus
+
+    var vans = restante / capacidadeVan
+    restante %= capacidadeVan
+
+    var carros = (restante + capacidadeCarro - 1) / capacidadeCarro // arredonda para cima
+
+    val veiculos = mapOf(
+        "Ônibus" to onibus,
+        "Vans" to vans,
+        "Carros" to carros
+    )
+
+    // custo base de exemplo
+    val custo = (onibus * 500) + (vans * 200) + (carros * 100)
+
+    println("\n--- RESUMO TRANSPORTE ---")
+    println("Destino: $destino")
+    println("Pessoas: $qtdPessoas")
+    veiculos.forEach { (tipo, qtd) -> if (qtd > 0) println("$tipo: $qtd") }
+    println("Custo total: R$ $custo")
+    println("--------------------------")
+
+    val transporte = Transporte(
+        id = contadorTransporte++,
+        destino = destino,
+        qtdPessoas = qtdPessoas,
+        veiculos = veiculos,
+        custo = custo
+    )
+    transportes.add(transporte)
+}
+
+fun pesquisaAbastecimento(scanner: Scanner) {
+    println("=== PESQUISA DE MELHOR ABASTECIMENTO ===")
+
+    fun lerPreco(msg: String): Double {
+        var valor: Double
+        while (true) {
+            print(msg)
+            valor = scanner.nextLine().replace(",", ".").toDoubleOrNull() ?: -1.0
+            if (valor > 0) {
+                return round(valor * 100) / 100.0
+            } else {
+                println("Valor inválido! Digite novamente.")
+            }
+        }
+    }
+
+    val tanque = 42.0
+
+    val alcoolWayne = lerPreco("Álcool - Wayne Oil: ")
+    val gasolinaWayne = lerPreco("Gasolina - Wayne Oil: ")
+    val alcoolStark = lerPreco("Álcool - Stark Petrol: ")
+    val gasolinaStark = lerPreco("Gasolina - Stark Petrol: ")
+
+    val opcoes = listOf(
+        Combustivel("Wayne Oil", "Álcool", alcoolWayne, alcoolWayne * tanque),
+        Combustivel("Wayne Oil", "Gasolina", gasolinaWayne, gasolinaWayne * tanque),
+        Combustivel("Stark Petrol", "Álcool", alcoolStark, alcoolStark * tanque),
+        Combustivel("Stark Petrol", "Gasolina", gasolinaStark, gasolinaStark * tanque)
+    )
+
+    println("\n--- TABELA ---")
+    opcoes.forEach { println("${it.posto} - ${it.tipo}: R$ %.2f".format(it.custoTotal)) }
+
+    val vantagemWayne = if (alcoolWayne <= gasolinaWayne * 0.70) "Álcool" else "Gasolina"
+    val vantagemStark = if (alcoolStark <= gasolinaStark * 0.70) "Álcool" else "Gasolina"
+
+    println("\nNo Wayne Oil, vale mais a pena abastecer com $vantagemWayne.")
+    println("No Stark Petrol, vale mais a pena abastecer com $vantagemStark.")
+
+    val melhor = opcoes.minByOrNull { it.custoTotal }!!
+    println("\n>>> Melhor opção: ${melhor.posto} - ${melhor.tipo}, total = R$ %.2f".format(melhor.custoTotal))
+}
+
+fun calcularOrcamento(empresa: Empresa): Double {
+    var valorBruto = empresa.valorPorAparelho * empresa.quantidadeAparelhos
+    var valorComDesconto = valorBruto
+
+    if (empresa.quantidadeAparelhos >= empresa.quantidadeMinimaDesconto) {
+        val desconto = valorBruto * (empresa.percentualDesconto / 100.0)
+        valorComDesconto -= desconto
+    }
+
+    if (valorComDesconto < empresa.valorMinimoIsencao) {
+        valorComDesconto += empresa.taxaDeslocamento
+    }
+
+    return valorComDesconto
+}
 
 
+fun manutencaoDeAr() {
+    val empresas = mutableListOf<Empresa>()
 
+    do {
+        println("Informe os dados da empresa:")
+
+        print("Nome da empresa: ")
+        val nome = readLine() ?: ""
+
+        print("Valor por aparelho: ")
+        val valorPorAparelho = readLine()?.toDoubleOrNull() ?: 0.0
+
+        print("Quantidade de aparelhos: ")
+        val quantidadeAparelhos = readLine()?.toIntOrNull() ?: 0
+
+        print("Percentual de desconto (%): ")
+        val percentualDesconto = readLine()?.toDoubleOrNull() ?: 0.0
+
+        print("Quantidade mínima de aparelhos para desconto: ")
+        val quantidadeMinima = readLine()?.toIntOrNull() ?: 0
+
+        print("Valor mínimo para isenção da taxa de deslocamento: ")
+        val valorMinimo = readLine()?.toDoubleOrNull() ?: 0.0
+
+        print("Valor da taxa de deslocamento: ")
+        val taxaDeslocamento = readLine()?.toDoubleOrNull() ?: 0.0
+
+        val empresa = Empresa(
+            nome,
+            valorPorAparelho,
+            quantidadeAparelhos,
+            percentualDesconto,
+            quantidadeMinima,
+            valorMinimo,
+            taxaDeslocamento
+        )
+        empresa.valorFinal = calcularOrcamento(empresa)
+
+        empresas.add(empresa)
+
+        println("O serviço de ${empresa.nome} custará R$ ${empresa.valorFinal}")
+
+        print("Deseja informar novos dados? (S/N): ")
+        val opcao = readLine()?.uppercase()
+
+        if (opcao == "N") break
+
+    } while (true)
+
+    for (i in 0 until empresas.size - 1) {
+        var menor = i
+        for (j in i + 1 until empresas.size) {
+            if (empresas[j].valorFinal < empresas[menor].valorFinal) {
+                menor = j
+            }
+        }
+        if (menor != i) {
+            val temp = empresas[i]
+            empresas[i] = empresas[menor]
+            empresas[menor] = temp
+        }
+    }
+
+    println("\nOrçamentos em ordem crescente:")
+    empresas.forEach {
+        println("${it.nome}: R$ ${it.valorFinal}")
+    }
+
+    val menorEmpresa = empresas.first()
+    println("\nO orçamento de menor valor é o de ${menorEmpresa.nome} por R$ ${menorEmpresa.valorFinal}")
+}
 
 fun main() {
     val scanner = Scanner(System.`in`)
