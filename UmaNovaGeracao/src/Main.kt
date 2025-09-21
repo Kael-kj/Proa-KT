@@ -1,5 +1,6 @@
-import kotlinx.coroutine.*
+import kotlinx.coroutines.*
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.random.Random
 
 var dinheiro = 200.00f
 
@@ -10,12 +11,17 @@ data class Bixinho(
     val fome: Int = 0,
     val felicidade = 100,
     val sono: Int = 0,
-    val vida: Int = 100
+    val vida: Int = 100,
+    val sujeira: Int = 0,
+    val apertado: Int = 0
 ){
     fun limitarValor(){
         fome = fome.coerceIn(0, 100)
         felicidade = felicidade.coerceIn(o, 100)
         sono = sono.coerceIn(0, 100)
+        vida = vida.coerceIn(0, 100)
+        sujeira = sujeira.coerceIn(0, 100)
+        apertado = apertado.coerceIn(0, 100)
     }
 }
 
@@ -25,40 +31,48 @@ data class Geladeira(
     var quantidade: Int = 0
 )
 
-fun infoBixinho(lista2: MutableList<Geladeira>,lista: MutableList<Bixinho>){
+fun infoBixinho(geladeira: MutableList<Geladeira>, lista: MutableList<Bixinho>) {
     println("Bem vindo!\nVamos cadastrar seu bixinho virtual?\nMe informe o nome dele: ")
-    val nome = readLine()?.toString()?: ""
+    val nome = readLine()?.toString() ?: ""
     println("Agora me informe a idade dele: ")
-    val idade = readLine()?.toIntOrNull()?: 0
-    println("Muito obrigado por confiar em nossas plataformas para cuidar do seu bixinho virtual!\nAproveito para cuidar dele quando quiser.")
-    lista.add(Bixinho(nome, idade))
-    homepage(lista2,lista)
+    val idade = readLine()?.toIntOrNull() ?: 0
+    val bixinho = Bixinho(nome, idade)
+    lista.add(bixinho)
+
+    println("🎉 Cadastro concluído! Agora cuide bem do ${bixinho.nome}.")
+
+    iniciarContadorAuto(bixinho)
+    GlobalScope.launch { iniciarVidaAuto(bixinho) }
+
+    homepage(geladeira, bixinho)
 }
 
-fun homepage(lista2: MutableList<Geladeira>, lista: MutableList<Bixinho>) {
-    while(true) {
-        println("\n=== Nova Geração  ===")
-        println("1- Mercado")
-        println("2- Alimentar")
-        println("3- Logout")
-        println("4- Sair do programa")
-        println("5- Pesquisar hospedagens")
-        val escolha = readLine()?.toIntOrNull()
+fun homepage(geladeira: MutableList<Geladeira>, bixinho: Bixinho) = runBlocking {
+    while (true) {
+        println("\n=== 🏠 Home Page do ${bixinho.nome} ===")
+        println("Dinheiro: R$$dinheiro | Vida: ${bixinho.vida} | Fome: ${bixinho.fome} | Felicidade: ${bixinho.felicidade} | Sono: ${bixinho.sono}")
+        println("1 - Mercado 🛒")
+        println("2 - Alimentar 🍴")
+        println("3 - Brincar 🎲")
+        println("4 - Dormir 😴")
+        println("5 - Dar banho 🚿")
+        println("6 - Ir ao banheiro 🚽")
+        println("7 - Status 📊")
+        println("8 - Sair ❌")
 
-        when (escolha) {
-            1 -> {
-                compras(lista,lista2)
+        when (readln().toIntOrNull()) {
+            1 -> compras(mutableListOf(bixinho), geladeira)
+            2 -> alimentar(bixinho, geladeira)
+            3 -> brincar(bixinho)
+            4 -> dormir(bixinho)
+            5 -> tomarBanho(bixinho)
+            6 -> irAoBanheiro(bixinho)
+            7 -> verStatus(bixinho, geladeira)
+            8 -> {
+                println("Saindo do jogo... Até logo! 👋")
+                return@runBlocking
             }
-
-            2 -> {
-
-            }
-
-            3 -> {
-            }
-
-            else -> {
-            }
+            else -> println("❌ Opção inválida!")
         }
     }
 }
@@ -313,19 +327,37 @@ fun iniciarContadorAuto(bixinho: Bixinho){
 
             if( minutos % 3 == 0){
                 bixinho.fome++
-                bixinho.limitarValor()
                 println("⏰ ${bixinho.nome} ficou com mais fome! Fome: ${bixinho.fome}")
             }
             if(minutos % 2 == 0){
                 bixinho.felicidade -= 10
-                bixinho.limitarValor()
                 println("😢 ${bixinho.nome} ficou entediado! Felicidade: ${bixinho.felicidade}")
             }
             if(minutos % 5 == 0){
                 bixinho.sono++
-                bixinho.limitarValor()
                 println("😴 ${bixinho.nome} ficou mais cansado! Sono atual: ${bixinho.sono}")
             }
+            if (bixinho.fome >= 75 || bixinho.sono 75 || bixinho.sujeira >= 75 || bixinho.apertado >= 75 || bixinho.felicidade <= 25){
+                bixinho -= 2
+                println("⚠️ ${bixinho.nome} perdeu 2 de vida por descuido! Vida: ${bixinho.vida}")
+            }
+            if (minutos % 10080 == 0){
+                bixinho.idade++
+                println("🎂 ${bixinho.nome} fez aniversário! Agora tem ${bixinho.idade} aninhos!")
+            }
+            if (bixinho.fome >= 100 || bixinho.sono >= 100 || bixinho.sujeira >= 100 || bixinho.apertado >= 100){
+                bixinho.vida = 0
+                println("⭐ ${bixinho.nome} ficou muito fraquinho e virou uma estrelinha no céu!")
+                break
+            }
+            if (bixinho.vida <= 0){
+                println("⭐ ${bixinho.nome} descansou e virou uma estrelinha no céu!")
+                break
+            }
+            if (bixinho.idade = 50){
+                println("🎂 ${bixinho.nome} VOCÊ GANHOU O JOGO DA VIDA DOS BIXINHOS! Agora tem ${bixinho.idade} aninhos!")
+            }
+            bixinho.limitarValor()
         }
     }
 }
@@ -368,6 +400,7 @@ fun alimentar(bixinho: Bixinho, geladeira: MutableList<Geladeira>){
 
             alimento.quantidade--
             bixinho.fome = (bixinho.fome - satisfacao). coerceAtLeast(0)
+            bixinho.apertado = (bixinho.apertado + satisfacao). coerceAtLeast(100)
             bixinho.limitarValor()
 
             println("${bixinho.nome} comeu ${alimento.nome} 🍴")
@@ -403,6 +436,7 @@ fun brincar(bixinho: Bixinho){
 
 fun carinho(bixinho: Bixinho){
     bixinho.felicidade = (bixinho.felicidade + 5).coerceAtMost(100)
+    bixinho.sujeira = (bixinho.sujeira + 5).coerceAtMost(100)
     bixinho.limitarValor()
     println("Você fez carinho em ${meuBixinho.nome}. Felicidade: ${meuBixinho.felicidade}")
 }
@@ -410,6 +444,7 @@ fun passeio(bixinho: Bixinho){
     bixinho.felicidade = (bixinho.felicidade + 10).coerceAtMost(100)
     bixinho.fome += 5
     bixinho.sono += 5
+    bixinho.sujeira += 5
     bixinho.limitarValor()
     println("Vocês foram passear! Felicidade: ${meuBixinho.felicidade}, Fome: ${meuBixinho.fome}")
 }
@@ -439,6 +474,8 @@ fun jokenpo(bixinho: Bixinho){
         bixinho.limitarValor()
         println("${bixinho.nome} venceu! Felicidade: ${bixinho.felicidade}")
     }
+    bixinho.sujeira += 5
+    bixinho.limitarValor()
 }
 suspend fun bola(bixinho: Bixinho){
     println("Digite 'BOLA' rápido!")
@@ -473,6 +510,8 @@ suspend fun bola(bixinho: Bixinho){
         bixinho.limitarValor()
         println("${bixinho.nome} ficou esperando... Felicidade: ${bixinho.felicidade}")
     }
+    bixinho.sujeira += 5
+    bixinho.limitarValor()
 }
 suspend fun danca(bixinho: Bixinho){
     val setas = listOf("↑", "↓", "→", "←")
@@ -501,6 +540,7 @@ suspend fun danca(bixinho: Bixinho){
 
     bixinho.felicidade += pontos
     bixinho.sono += 5
+    bixinho.sujeira += 5
     bixinho.limitarValor()
     println("🎉 Dança finalizada! Felicidade atual de ${bixinho.nome}: ${bixinho.felicidade}")
 }
@@ -523,14 +563,108 @@ suspend fun dormir(bixinho: Bixinho){
     while (bixinho.sono > 0 && dormindo.get()){
         delay(5000)
         bixinho.sono -= 2
+        bixinho.vida += 2
         bixinho.limitarValor()
         println("zZZ Sono de ${bixinho.nome}: ${bixinho.sono}")
     }
     dormindo.set(false)
     println("${bixinho.nome} acordou naturalmente!")
 }
-fun main(){
+
+fun tomarBanho(bixinho: Bixinho) = runBlocking {
+    val palavrasBanho = listOf("ESPUMA", "ESPONJA", "TOALHA", "SABONETE", "BANHO")
+    val palavraEscolhida = palavrasBanho.random()
+
+    println("🚿 É hora do banho do ${bixinho.nome}!")
+    println("Digite a palavra '$palavraEscolhida' em até 5 segundos:")
+
+    val resposta = withTimeoutOrNull (5000) {
+        readln()
+    }
+
+    if (resposta != null && resposta.uppercase() == palavraEscolhida){
+        bixinho.sujeira = (bixinho.sujeira - 5).coerceAtLeast(0)
+        println("✅ ${bixinho.nome} ficou mais limpo! Sujeira atual: ${bixinho.sujeira}")
+    } else {
+        println("❌ Você errou ou demorou! ${bixinho.nome} continua com sujeira: ${bixinho.sujeira}")
+    }
+    bixinho.limitarValor()
+}
+
+suspend fun irAoBanheiro(bixinho: Bixinho){
+    val palavras = listOf("DESCARGA", "VASO", "PAPEL", "TORNEIRA")
+    val palavraEscolhida = palavras.random()
+
+    println("🚽 Seu bixinho ${bixinho.nome} quer ir ao banheiro!")
+    println("Digite a palavra '$palavraEscolhida' em até 5 segundos:")
+
+    val resposta = withTimeoutOrNull(5000){
+        readlnOrNull()
+    }
+    if (resposta != null && resposta.uppercase() == palavraEscolhida){
+        bixinho.apertado -=5
+        println("✅ Muito bem! ${bixinho.nome} usou o banheiro direitinho. Sujeira atual: ${bixinho.sujeira}")
+    } else {
+        println("❌ ${bixinho.nome} não conseguiu usar o banheiro a tempo... Sujeira: ${bixinho.sujeira}")
+    }
+}
+
+suspend fun iniciarVidaAuto(bixinho: Bixinho){
+    while true {
+        delay(300_000)
+
+
+        if (bixinho.fome >= 100 || bixinho.sono >= 100){
+            bixinho.vida = 0
+            println("💤 ${bixinho.nome} ficou muito cansado e virou uma estrelinha ⭐")
+            break
+        }
+
+        var perdeuVida = false
+        val motivo = mutableListOf<String>()
+
+        if (bixinho.fome >= 75){ perdeuVida = true; motivos.add("FOME ALTA!") }
+        if (bixinho.felicidade <= 25){ perdeuVida = true; motivos.add("FELICIDADE BAIXA!") }
+        if (bixinho.sono >= 75){ perdeuVida = true; motivos.add("SONO ALTO!") }
+        if (bixinho.sujeira >= 75){ perdeuVida = true; motivos.add("SUJEIRA ALTA!") }
+        if (bixinho.apertado >= 75){ perdeuVida = true; motivos.add("VONTADE DE IR AO BANHEIRO!") }
+
+        if (perdeuVida) {
+            bixinho.vida -= 2
+            bixinho.limitarValor()
+            println("⚠️ ${bixinho.nome} perdeu 2 de vida por: ${motivos.joinToString(", ")}. Vida atual: ${bixinho.vida}")
+        }
+
+        if (bixinho.vida <= 0){
+            println("⭐ ${bixinho.nome} ficou muito fraquinho e virou uma estrelinha no céu!")
+            break
+        }
+    }
+}
+
+fun verStatus(bixinho: Bixinho, geladeira: MutableList<Geladeira>){
+    println("\n=== 📊 Status do Bixinho ===")
+    println("Nome: ${bixinho.nome}")
+    println("Idade: ${bixinho.idade}")
+    println("Vida: ${bixinho.vida}/100")
+    println("Fome: ${bixinho.fome}/100")
+    println("Felicidade: ${bixinho.felicidade}/100")
+    println("Sono: ${bixinho.sono}/100")
+    println("Dinheiro disponível: R$$dinheiro")
+
+    println("\n=== 🧊 Geladeira ===")
+    if (geladeira.isEmpty()) {
+        println("A geladeira está vazia.")
+    } else {
+        geladeira.forEach {
+            println("🍖 ${it.salgado} | 🍰 ${it.doce} | 🥤 ${it.bebida} | 🥗 ${it.salada} | 🍎 ${it.frutas}")
+        }
+    }
+    println("==========================\n")
+}
+
+fun main() {
     val lista = mutableListOf<Bixinho>()
-    val lista2 = mutableListOf<Geladeira>()
-    infoBixinho(lista2,lista)
+    val geladeira = mutableListOf<Geladeira>()
+    infoBixinho(geladeira, lista)
 }
