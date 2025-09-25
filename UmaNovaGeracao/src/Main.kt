@@ -87,7 +87,7 @@ suspend fun compras(geladeira: MutableList<Geladeira>, bixinho: Bixinho) {
         println("6- Caixa")
         println("7- Voltar")
         when (readLine()?.toIntOrNull()) {
-            1 -> { // Salgados
+            1 -> {
                 while (true) {
                     println("\nSalgados:")
                     println("1- Bife - R$2.00")
@@ -122,7 +122,7 @@ suspend fun compras(geladeira: MutableList<Geladeira>, bixinho: Bixinho) {
                 }
             }
 
-            2 -> { // Doces
+            2 -> {
                 while (true) {
                     println("\nDoces:")
                     println("1- Brigadeiro - R$2.00")
@@ -142,7 +142,7 @@ suspend fun compras(geladeira: MutableList<Geladeira>, bixinho: Bixinho) {
                 }
             }
 
-            3 -> { // Bebidas
+            3 -> {
                 while (true) {
                     println("\nBebidas:")
                     println("1- Agua - R$2.00")
@@ -162,7 +162,7 @@ suspend fun compras(geladeira: MutableList<Geladeira>, bixinho: Bixinho) {
                 }
             }
 
-            4 -> { // Saladas
+            4 -> {
                 while (true) {
                     println("\nSaladas:")
                     println("1- Alface - R$2.00")
@@ -180,7 +180,7 @@ suspend fun compras(geladeira: MutableList<Geladeira>, bixinho: Bixinho) {
                 }
             }
 
-            5 -> { // Frutas
+            5 -> {
                 while (true) {
                     println("\nFrutas:")
                     println("1- Laranja - R$2.00")
@@ -198,9 +198,8 @@ suspend fun compras(geladeira: MutableList<Geladeira>, bixinho: Bixinho) {
                 }
             }
 
-            6 -> { // Caixa
+            6 -> {
                 println("\n=== Caixa ===")
-                // consolidar carrinho (somar quantidades do mesmo nome)
                 val consolidado = mutableMapOf<String, Geladeira>()
                 for (p in carrinho) {
                     val existe = consolidado[p.nome]
@@ -224,7 +223,6 @@ suspend fun compras(geladeira: MutableList<Geladeira>, bixinho: Bixinho) {
                         1 -> {
                             if (dinheiro >= contaTotal) {
                                 dinheiro -= contaTotal
-                                // adicionar ao estoque da geladeira (somando quantidades)
                                 for (it in consolidado.values) {
                                     val existente = geladeira.find { g -> g.nome == it.nome }
                                     if (existente != null) existente.quantidade += it.quantidade
@@ -245,7 +243,7 @@ suspend fun compras(geladeira: MutableList<Geladeira>, bixinho: Bixinho) {
                 }
             }
 
-            7 -> return // volta ao menu anterior (homepage)
+            7 -> return
             else -> println("Opção inválida")
         }
     }
@@ -256,7 +254,7 @@ fun iniciarContadorAuto(bixinho: Bixinho) {
     thread(start = true) {
         var minutos = 0
         while (true) {
-            Thread.sleep(60_000) // 1 minuto (em testes você pode reduzir)
+            Thread.sleep(60_000)
             minutos++
 
             if (minutos % 3 == 0) {
@@ -272,19 +270,16 @@ fun iniciarContadorAuto(bixinho: Bixinho) {
                 println("😴 ${bixinho.nome} ficou mais cansado! Sono atual: ${bixinho.sono}")
             }
 
-            // penalidades por parâmetros altos/baixos
             if (bixinho.fome >= 75 || bixinho.sono >= 75 || bixinho.sujeira >= 75 || bixinho.apertado >= 75 || bixinho.felicidade <= 25) {
                 bixinho.vida -= 2
                 println("⚠️ ${bixinho.nome} perdeu 2 de vida por descuido! Vida: ${bixinho.vida}")
             }
 
-            // aniversário (10080 minutos = 7 dias)
             if (minutos % 10080 == 0) {
                 bixinho.idade++
                 println("🎂 ${bixinho.nome} fez aniversário! Agora tem ${bixinho.idade} aninhos!")
             }
 
-            // morte por parâmetros extremos
             if (bixinho.fome >= 100 || bixinho.sono >= 100 || bixinho.sujeira >= 100 || bixinho.apertado >= 100) {
                 bixinho.vida = 0
                 println("⭐ ${bixinho.nome} ficou muito fraquinho e virou uma estrelinha no céu!")
@@ -476,7 +471,7 @@ suspend fun danca(bixinho: Bixinho) {
             println("⏰ Você não respondeu a tempo!")
         } else if (resposta == passo) {
             pontos += 2
-            dinheiro += 10f // recompensa por cada acerto (conforme pedido)
+            dinheiro += 10f
             println("✅ Acertou! (+2 pontos, +R$10)")
         } else {
             println("❌ Errou! Era $passo")
@@ -506,7 +501,7 @@ suspend fun dormir(bixinho: Bixinho) {
     }
 
     while (bixinho.sono > 0 && dormindo.get()) {
-        delay(5000) // 5 segundos
+        delay(5000)
         bixinho.sono = (bixinho.sono - 2).coerceAtLeast(0)
         bixinho.vida = (bixinho.vida + 2).coerceAtMost(100)
         bixinho.limitarValor()
